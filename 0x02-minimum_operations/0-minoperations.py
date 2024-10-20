@@ -5,11 +5,12 @@ needed to result in exactly n H characters in the file.
 """
 
 
-def minOperationsRecursive(n, divisor=2):
+def minOperations(n):
     """
     Returns the fewest number of operations needed to result in exactly
     n H characters in the file, using recursion.
     """
+    divisor=2
     if n <= 1:
         return 0
 
