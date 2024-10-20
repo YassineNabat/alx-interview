@@ -15,6 +15,6 @@ def minOperations(n):
         return 0
 
     if n % divisor == 0:
-        return divisor + minOperationsRecursive(n // divisor, divisor)
+        return divisor + minOperations(n // divisor, divisor)
         
-    return minOperationsRecursive(n, divisor + 1)
+    return minOperations(n, divisor + 1)
