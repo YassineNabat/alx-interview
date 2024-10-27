@@ -1,45 +1,65 @@
 #!/usr/bin/python3
-
-"""Script that reads stdin line by line and computes metrics"""
-
 import sys
+import signal
 
+# Initialize metrics
+total_file_size = 0
+status_codes_count = {
+    "200": 0,
+    "301": 0,
+    "400": 0,
+    "401": 0,
+    "403": 0,
+    "404": 0,
+    "405": 0,
+    "500": 0
+}
+line_count = 0
 
-def printsf(dic, size):
-    """ Prints information """
-    print("File size: {:d}".format(size))
-    for i in sorted(dic.keys()):
-        if dic[i] != 0:
-            print("{}: {:d}".format(i, dic[i]))
+def print_stats():
+    """Prints the current statistics"""
+    print(f"File size: {total_file_size}")
+    for code in sorted(status_codes_count.keys()):
+        if status_codes_count[code] > 0:
+            print(f"{code}: {status_codes_count[code]}")
 
-
-sts = {"200": 0, "301": 0, "400": 0, "401": 0, "403": 0,
-       "404": 0, "405": 0, "500": 0}
-
-count = 0
-size = 0
-
-try:
-    for line in sys.stdin:
-        if count != 0 and count % 10 == 0:
-            printsf(sts, size)
-
-        stlist = line.split()
-        count += 1
-
+def process_line(line):
+    """Processes a single line to update metrics if the format is valid"""
+    global total_file_size
+    parts = line.split()
+    
+    # Validate line format
+    if len(parts) >= 7 and parts[5] == '"GET' and parts[6].startswith('/projects/260'):
         try:
-            size += int(stlist[-1])
-        except:
+            status_code = parts[-2]
+            file_size = int(parts[-1])
+            
+            # Update total file size
+            total_file_size += file_size
+            
+            # Update status code count if valid
+            if status_code in status_codes_count:
+                status_codes_count[status_code] += 1
+        except (ValueError, IndexError):
             pass
 
-        try:
-            if stlist[-2] in sts:
-                sts[stlist[-2]] += 1
-        except:
-            pass
-    printsf(sts, size)
+def signal_handler(sig, frame):
+    """Handles keyboard interruption (CTRL + C)"""
+    print_stats()
+    sys.exit(0)
 
+# Set up signal handler for CTRL + C
+signal.signal(signal.SIGINT, signal_handler)
 
-except KeyboardInterrupt:
-    printsf(sts, size)
-    raise
+# Main loop to read stdin
+for line in sys.stdin:
+    process_line(line.strip())
+    line_count += 1
+
+    # Print stats after every 10 lines
+    if line_count % 10 == 0:
+        print_stats()
+
+# Print final stats if there are any remaining lines
+if line_count % 10 != 0:
+    print_stats()
